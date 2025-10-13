@@ -1,0 +1,14 @@
+# 기본 패키지
+numpy==1.19.4
+opencv-python==4.5.5.64
+matplotlib==3.3.4
+Pillow==8.4.0
+tqdm==4.62.3
+scipy==1.5.4
+
+seaborn==0.11.2
+pandas==1.1.5
+PyYAML==5.4.1
+requests==2.26.0
+# torchvision==0.11.1  # (pip로 안하고 wheel 설치 후 버전 맞춰야 함)
+
