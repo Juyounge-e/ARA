@@ -2,7 +2,7 @@ import cv2
 import torch
 
 # YOLO 로드 (로컬 yolov5 clone 경로 지정)
-model = torch.hub.load('/home/huro/yolov5', 'yolov5s', source='local')
+model = torch.hub.load('/home/huro/Desktop/ARA/yolov5', 'yolov5s', source='local')
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.to(device)
 
