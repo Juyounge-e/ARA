@@ -6,30 +6,35 @@ import tflite_runtime.interpreter as tflite
 # ===============================
 # 1. 모델 불러오기
 # ===============================
-MODEL_PATH = "best-fp16.tflite"  # 여기에 tflite 파일 경로 넣기
+MODEL_PATH = "best-fp16.tflite"  # tflite 모델 파일 경로
 interpreter = tflite.Interpreter(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-# 입력 크기 가져오기
+# 입력 크기
 input_height = input_details[0]['shape'][1]
 input_width = input_details[0]['shape'][2]
 
 # ===============================
-# 2. 카메라 열기
+# 2. 클래스 이름 정의
+# ===============================
+class_names = [
+    "마늘", "감자", "달걀", "양파", "닭고기", 
+    "돼지고기", "대파", "소고기", "김치", "햄", "콩나물"
+]
+
+# ===============================
+# 3. 카메라 열기
 # ===============================
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("❌ 카메라 열기 실패")
     exit()
 
-# 클래스 이름 (필요시 수정)
-class_names = ["person", "cup", "bottle", "plate", "food"]  # 예시
-
 # ===============================
-# 3. 실시간 추론 루프
+# 4. 실시간 추론 루프
 # ===============================
 while True:
     ret, frame = cap.read()
@@ -46,37 +51,50 @@ while True:
     interpreter.invoke()
     output_data = interpreter.get_tensor(output_details[0]['index'])
 
-    # --- 후처리 (YOLO 형식 가정) ---
-    # output_data: [N, 6] → [x1, y1, x2, y2, conf, class]
+    # --- 후처리 ---
     for det in output_data[0]:
-        x1, y1, x2, y2, conf, cls = det
+        values = det.tolist()
+        if len(values) < 6:
+            continue
+
+        x1, y1, x2, y2 = values[:4]
+        conf = values[4]
+        cls = int(values[5])
+
         if conf < 0.3:  # confidence threshold
             continue
 
-        # 좌표 정수형 변환 (원본 크기에 맞게 비율 조정)
         h, w, _ = frame.shape
-        x1 = int(x1 / input_width * w)
-        y1 = int(y1 / input_height * h)
-        x2 = int(x2 / input_width * w)
-        y2 = int(y2 / input_height * h)
+
+        # 좌표 변환 (정규화 여부 자동 처리)
+        if 0 <= x1 <= 1 and 0 <= x2 <= 1:
+            x1 = int(x1 * w)
+            x2 = int(x2 * w)
+            y1 = int(y1 * h)
+            y2 = int(y2 * h)
+        else:
+            x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
 
         # 중앙 좌표
         cx = int((x1 + x2) / 2)
         cy = int((y1 + y2) / 2)
 
-        # 바운딩박스 그리기
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        label = "{} {:.2f}".format(class_names[int(cls)] if int(cls) < len(class_names) else str(int(cls)), conf)
-        cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        # 클래스 이름 가져오기
+        cls_name = class_names[cls] if cls < len(class_names) else str(cls)
 
-        # 중앙점 찍기
+        # 바운딩 박스
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        label = "{} {:.2f}".format(cls_name, conf)
+        cv2.putText(frame, label, (x1, y1 - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
         cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
-        print(f"탐지됨 → 클래스: {class_names[int(cls)] if int(cls) < len(class_names) else str(int(cls))}, 좌표: ({cx}, {cy}), 신뢰도: {conf:.2f}")
+
+        print(f"탐지됨 → 클래스: {cls_name}, 좌표: ({cx}, {cy}), 신뢰도: {conf:.2f}")
 
     # --- 결과 출력 ---
     cv2.imshow("TFLite Detection", frame)
 
-    if cv2.waitKey(1) & 0xFF == 27:  # ESC 종료
+    if cv2.waitKey(1) & 0xFF == 27:  # ESC 키 종료
         break
 
 cap.release()
