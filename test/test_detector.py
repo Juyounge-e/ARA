@@ -26,8 +26,9 @@ while True:
     annotated = results.render()[0]
 
     # 탐지된 객체 정보 출력
-    for *box, conf, cls in results.xyxy[0]:  # xyxy = [x1, y1, x2, y2]
-        x1, y1, x2, y2 = map(int, box)
+    for det in results.xyxy[0]:
+        x1, y1, x2, y2, conf, cls = det.tolist()
+        x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
         cx = int((x1 + x2) / 2)
         cy = int((y1 + y2) / 2)
         print(f"탐지됨 → 클래스: {model.names[int(cls)]}, 좌표: ({cx}, {cy}), 신뢰도: {conf:.2f}")
