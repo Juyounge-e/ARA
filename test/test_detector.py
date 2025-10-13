@@ -1,20 +1,12 @@
 import cv2
 import torch
-import sys
-from pathlib import Path
 
-# yolov5 폴더를 Python path에 추가
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[1] / "yolov5"  # ~/Desktop/ARA/yolov5
-sys.path.append(str(ROOT))
+# 모델 로드 (로컬 yolov5 디렉토리에서 yolov5s.pt 불러오기)
+model = torch.hub.load('/home/huro/Desktop/ARA/yolov5', 'yolov5s', source='local')
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model.to(device)
 
-from models.common import DetectMultiBackend
-from utils.torch_utils import select_device
-from utils.general import non_max_suppression
-
-# 모델 로드
-device = select_device('')
-model = DetectMultiBackend(str(ROOT / 'yolov5s.pt'), device=device)
+# USB 카메라 열기
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("❌ 카메라 열기 실패")
@@ -28,17 +20,21 @@ while True:
 
     # YOLO 추론
     results = model(frame)
+
+    # 결과 시각화
     annotated = results.render()[0]
 
-    # 첫 번째 탐지된 물체 정보 가져오기
-    if len(results.xyxy[0]) > 0:
-        x1, y1, x2, y2, conf, cls = results.xyxy[0][0].tolist()
+    # 탐지된 객체 정보 출력
+    for *box, conf, cls in results.xyxy[0]:  # xyxy = [x1, y1, x2, y2]
+        x1, y1, x2, y2 = map(int, box)
         cx = int((x1 + x2) / 2)
         cy = int((y1 + y2) / 2)
         print(f"탐지됨 → 클래스: {model.names[int(cls)]}, 좌표: ({cx}, {cy}), 신뢰도: {conf:.2f}")
 
-    cv2.imshow("YOLO Detection", annotated)
-    if cv2.waitKey(1) & 0xFF == 27:
+    # 결과 보여주기
+    cv2.imshow("YOLOv5 Detection", annotated)
+
+    if cv2.waitKey(1) & 0xFF == 27:  # ESC 키
         break
 
 cap.release()
