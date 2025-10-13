@@ -1,11 +1,20 @@
 import cv2
 import torch
+import sys
+from pathlib import Path
 
-# YOLO 로드 (로컬 yolov5 clone 경로 지정)
-model = torch.hub.load('/home/huro/Desktop/ARA/yolov5', 'yolov5s', source='local')
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model.to(device)
+# yolov5 폴더를 Python path에 추가
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[1] / "yolov5"  # ~/Desktop/ARA/yolov5
+sys.path.append(str(ROOT))
 
+from models.common import DetectMultiBackend
+from utils.torch_utils import select_device
+from utils.general import non_max_suppression
+
+# 모델 로드
+device = select_device('')
+model = DetectMultiBackend(str(ROOT / 'yolov5s.pt'), device=device)
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("❌ 카메라 열기 실패")
