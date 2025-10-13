@@ -1,9 +1,10 @@
 import cv2
 import torch
 
-# 모델 로드 (YOLOv5s - 작은 모델, 속도 빠름)
-# yolov5 디렉토리를 clone 해둔 경우
-model = torch.hub.load('yolov5', 'yolov5s', source='local')  
+# 모델 로드 (YOLOv5s, 로컬에서 불러오기)
+model = torch.hub.load('/home/huro/yolov5', 'yolov5s', source='local')
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model.to(device)
 
 # USB 카메라 열기 (보통 /dev/video0)
 cap = cv2.VideoCapture(0)
