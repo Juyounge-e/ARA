@@ -1,18 +1,15 @@
+# # PyTorch & Torchvision (JetPack 4.6 / CUDA 10.2 전용 wheel 설치 필요)
+# torch==1.10.0+nv22.01
+# torchvision==0.11.1+nv22.01
+
 # 기본 패키지
 numpy==1.19.4
 opencv-python==4.5.5.64
 matplotlib==3.3.4
 Pillow==8.4.0
-tqdm==4.62.3
 scipy==1.5.4
-
 seaborn==0.11.2
 pandas==1.1.5
 PyYAML==5.4.1
+tqdm==4.62.3
 requests==2.26.0
-# torchvision==0.11.1  # (pip로 안하고 wheel 설치 후 버전 맞춰야 함)
-
-deb http://ports.ubuntu.com/ubuntu-ports bionic main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports bionic-updates main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports bionic-security main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports bionic-backports main restricted universe multiverse
