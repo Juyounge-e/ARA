@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import cv2
 import torch
 
@@ -9,13 +10,13 @@ model.to(device)
 # USB 카메라 열기
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
-    print("❌ 카메라 열기 실패")
+    print(" 카메라 열기 실패")
     exit()
 
 while True:
     ret, frame = cap.read()
     if not ret:
-        print("❌ 프레임 읽기 실패")
+        print(" 프레임 읽기 실패")
         break
 
     # YOLO 추론
