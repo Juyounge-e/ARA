@@ -6,7 +6,7 @@ import tflite_runtime.interpreter as tflite
 # ===============================
 # 1. 모델 불러오기
 # ===============================
-MODEL_PATH = "best-fp16.tflite"  # tflite 모델 파일 경로
+MODEL_PATH = "best-fp16.tflite"  
 interpreter = tflite.Interpreter(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
 
