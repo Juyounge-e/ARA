@@ -25,21 +25,16 @@ while True:
     # 결과 시각화
     annotated = results.render()[0]
 
+  
     # 탐지된 객체 정보 출력
     for det in results.xyxy[0]:
         x1, y1, x2, y2, conf, cls = det.tolist()
         x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
         cx = int((x1 + x2) / 2)
         cy = int((y1 + y2) / 2)
-# 탐지된 객체 정보 출력
-for det in results.xyxy[0]:
-    x1, y1, x2, y2, conf, cls = det.tolist()
-    x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
-    cx = int((x1 + x2) / 2)
-    cy = int((y1 + y2) / 2)
-    print("탐지됨 → 클래스: {}, 좌표: ({}, {}), 신뢰도: {:.2f}".format(
-        model.names[int(cls)], cx, cy, conf
-    ))
+        print("탐지됨 → 클래스: {}, 좌표: ({}, {}), 신뢰도: {:.2f}".format(
+            model.names[int(cls)], cx, cy, conf
+        ))
     
     # 결과 보여주기
     cv2.imshow("YOLOv5 Detection", annotated)
