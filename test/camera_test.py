@@ -2,13 +2,13 @@ import cv2
 
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
-    print("❌ 카메라 열기 실패")
+    print(" 카메라 열기 실패")
     exit()
 
 while True:
     ret, frame = cap.read()
     if not ret:
-        print("❌ 프레임 읽기 실패")
+        print(" 프레임 읽기 실패")
         break
 
     cv2.imshow("Camera Test", frame)
