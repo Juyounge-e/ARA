@@ -1,63 +1,94 @@
 # -*- coding: utf-8 -*-
 import cv2
-import torch
+import numpy as np
+import tflite_runtime.interpreter as tflite
 import os
-from pathlib import Path
-import datetime
 
 # ===============================
-# 1. 모델 로드 (YOLOv5)
+# 1. 모델 & 클래스 불러오기
 # ===============================
-# 로컬 yolov5 디렉토리와 모델 파일 경로
-YOLO_PATH = "/home/huro/Desktop/ara/yolov5"   # YOLOv5 코드 디렉토리
-MODEL_NAME = "yolov5s"                        # yolov5s, yolov5m, yolov5l, yolov5x 등
-model = torch.hub.load(YOLO_PATH, MODEL_NAME, source='local')
+MODEL_PATH = "best-fp16.tflite"
+IMAGE_PATH = "test/food.jpg"   
+SAVE_PATH = "detections/result.jpg"   
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model.to(device)
+# 클래스 이름 (11개)
+class_names = [
+    "마늘", "감자", "달걀", "양파", "닭고기",
+    "돼지고기", "대파", "소고기", "김치", "햄", "콩나물"
+]
+
+interpreter = tflite.Interpreter(model_path=MODEL_PATH)
+interpreter.allocate_tensors()
+
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+input_height, input_width = input_details[0]['shape'][1:3]
 
 # ===============================
-# 2. 이미지 경로
-# ===============================
-IMAGE_PATH = "test/food.png"       # 분석할 사진
-SAVE_DIR = "detections"
-os.makedirs(SAVE_DIR, exist_ok=True)
-
-# ===============================
-# 3. 이미지 불러오기
+# 2. 이미지 불러오기
 # ===============================
 if not os.path.exists(IMAGE_PATH):
-    print("❌ 이미지 경로가 잘못되었습니다:", IMAGE_PATH)
+    print(" 이미지 경로가 잘못되었습니다:", IMAGE_PATH)
     exit()
 
-img = cv2.imread(IMAGE_PATH)
+frame = cv2.imread(IMAGE_PATH)
+h, w, _ = frame.shape
+
+# 전처리
+img = cv2.resize(frame, (input_width, input_height))
+img = np.expand_dims(img, axis=0).astype(np.float32)
 
 # ===============================
-# 4. 추론
+# 3. 추론
 # ===============================
-results = model(img)
-
-# 바운딩 박스 포함된 이미지
-annotated = results.render()[0]
-
-# ===============================
-# 5. 탐지 정보 출력
-# ===============================
-for det in results.xyxy[0]:  
-    x1, y1, x2, y2, conf, cls = det.tolist()
-    cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
-    print(f"탐지됨 → 클래스: {model.names[int(cls)]}, 좌표: ({cx}, {cy}), 신뢰도: {conf:.2f}")
+interpreter.set_tensor(input_details[0]['index'], img)
+interpreter.invoke()
+output_data = interpreter.get_tensor(output_details[0]['index'])[0]
 
 # ===============================
-# 6. 결과 저장
+# 4. 탐지 결과 처리
 # ===============================
-timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-save_path = os.path.join(SAVE_DIR, f"detect_{timestamp}.jpg")
-cv2.imwrite(save_path, annotated)
+for det in output_data:
+    if len(det) < 6:
+        continue
 
-print(f"✅ 탐지 결과 저장 완료: {save_path}")
+    x1, y1, x2, y2 = det[:4]
+    probs = det[5:]
+    cls = int(np.argmax(probs))
+    conf = probs[cls]
 
-# 결과 화면도 표시
-cv2.imshow("YOLOv5 Image Detection", annotated)
+    if conf < 0.5:  # confidence threshold
+        continue
+
+    # 좌표 변환
+    if 0 <= x1 <= 1 and 0 <= x2 <= 1:
+        x1, x2 = int(x1 * w), int(x2 * w)
+        y1, y2 = int(y1 * h), int(y2 * h)
+    else:
+        x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+
+    # 중앙 좌표
+    cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+
+    # 클래스 이름
+    cls_name = class_names[cls]
+
+    # 바운딩 박스
+    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    cv2.putText(frame, f"{cls_name} {conf:.2f}", (x1, y1 - 5),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
+
+    print(f"탐지됨 → {cls_name}, 좌표: ({cx}, {cy}), 신뢰도: {conf:.2f}")
+
+# ===============================
+# 5. 결과 저장
+# ===============================
+os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
+cv2.imwrite(SAVE_PATH, frame)
+print(f" 탐지 결과 저장 완료: {SAVE_PATH}")
+
+# 화면도 표시 (옵션)
+cv2.imshow("Detection Result", frame)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
