@@ -57,7 +57,7 @@ def nms(boxes, scores, iou_threshold=0.4):
 # ===============================
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
-    print("❌ 카메라 열기 실패")
+    print("카메라 열기 실패")
     exit()
 
 frame_count = 0

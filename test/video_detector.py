@@ -35,7 +35,7 @@ print("모델 준비 완료")
 # ===============================
 cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
 if not cap.isOpened():
-    print("❌ 카메라 열기 실패")
+    print("카메라 열기 실패")
     exit()
 
 # 동영상 저장 준비
@@ -52,7 +52,7 @@ frame_count = 0
 while True:
     ret, frame = cap.read()
     if not ret:
-        print("❌ 프레임 읽기 실패")
+        print("프레임 읽기 실패")
         break
 
     # YOLO 추론
