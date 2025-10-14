@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
 import cv2
 import numpy as np
 import tflite_runtime.interpreter as tflite
 
+# ===============================
+# 1. 모델 불러오기
+# ===============================
 MODEL_PATH = "best-fp16.tflite"
 interpreter = tflite.Interpreter(model_path=MODEL_PATH)
 interpreter.allocate_tensors()
@@ -10,22 +14,20 @@ input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 input_height, input_width = input_details[0]['shape'][1:3]
 
-# 클래스 이름
-class_names = ["마늘", "감자", "달걀", "양파", "닭고기",
-               "돼지고기", "대파", "소고기", "김치", "햄", "콩나물"]
+# ===============================
+# 2. 클래스 이름 정의
+# ===============================
+class_names = [
+    "마늘", "감자", "달걀", "양파", "닭고기",
+    "돼지고기", "대파", "소고기", "김치", "햄", "콩나물"
+]
 
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    print("❌ 카메라 열기 실패")
-    exit()
-
-frame_count = 0
-
+# ===============================
+# 3. NMS 함수
+# ===============================
 def nms(boxes, scores, iou_threshold=0.4):
-    """간단한 NMS 구현"""
     idxs = np.argsort(scores)[::-1]
     keep = []
-
     while len(idxs) > 0:
         cur = idxs[0]
         keep.append(cur)
@@ -48,19 +50,31 @@ def nms(boxes, scores, iou_threshold=0.4):
 
         # IoU가 작은 것만 남김
         idxs = idxs[1:][iou < iou_threshold]
-
     return keep
 
+# ===============================
+# 4. 카메라 열기
+# ===============================
+cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    print("❌ 카메라 열기 실패")
+    exit()
+
+frame_count = 0
+
+# ===============================
+# 5. 실시간 추론 루프
+# ===============================
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    # 전처리
+    # --- 전처리 ---
     img = cv2.resize(frame, (input_width, input_height))
     img = np.expand_dims(img, axis=0).astype(np.float32)
 
-    # 추론
+    # --- 추론 ---
     interpreter.set_tensor(input_details[0]['index'], img)
     interpreter.invoke()
     output_data = interpreter.get_tensor(output_details[0]['index'])[0]
@@ -68,16 +82,15 @@ while True:
     boxes, scores, classes = [], [], []
 
     for det in output_data:
-        values = det.tolist()
-        if len(values) < 6:
+        if len(det) < 6:
             continue
 
-        x1, y1, x2, y2 = values[:4]
-        probs = values[5:]
+        x1, y1, x2, y2 = det[:4]
+        probs = det[5:]
         cls = int(np.argmax(probs))
         conf = probs[cls]
 
-        if conf < 0.5:  # 더 높은 confidence 기준
+        if conf < 0.5:  # confidence threshold
             continue
 
         h, w, _ = frame.shape
@@ -91,6 +104,7 @@ while True:
         scores.append(conf)
         classes.append(cls)
 
+    # --- NMS 적용 후 시각화 ---
     if boxes:
         boxes = np.array(boxes)
         scores = np.array(scores)
@@ -103,16 +117,17 @@ while True:
             conf, cls = scores[i], classes[i]
             cls_name = class_names[cls]
 
-            # 바운딩박스 + 라벨
+            # 박스 그리기
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.putText(frame, f"{cls_name} {conf:.2f}", (x1, y1 - 5),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
             cv2.circle(frame, ((x1+x2)//2, (y1+y2)//2), 4, (0, 0, 255), -1)
 
-            # 매 10프레임마다만 출력
+            # 매 10프레임마다만 터미널 출력
             if frame_count % 10 == 0:
-                print(f"탐지됨 → 클래스: {cls_name}, 좌표: ({(x1+x2)//2}, {(y1+y2)//2}), 신뢰도: {conf:.2f}")
+                print(f"탐지됨 → {cls_name}, 좌표: ({(x1+x2)//2}, {(y1+y2)//2}), 신뢰도: {conf:.2f}")
 
+    # --- 결과 화면 표시 ---
     cv2.imshow("TFLite Detection (NMS)", frame)
     frame_count += 1
 
