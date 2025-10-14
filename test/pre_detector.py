@@ -51,22 +51,24 @@ while True:
     interpreter.invoke()
     output_data = interpreter.get_tensor(output_details[0]['index'])
 
-    # --- 후처리 ---
+        # --- 후처리 ---
     for det in output_data[0]:
         values = det.tolist()
         if len(values) < 6:
             continue
 
         x1, y1, x2, y2 = values[:4]
-        conf = values[4]
-        cls = int(values[5])
+        
+        # 클래스 확률 배열
+        scores = values[5:]
+        cls = int(np.argmax(scores))
+        conf = scores[cls]
 
         if conf < 0.3:  # confidence threshold
             continue
 
         h, w, _ = frame.shape
-
-        # 좌표 변환 (정규화 여부 자동 처리)
+        # 좌표 변환
         if 0 <= x1 <= 1 and 0 <= x2 <= 1:
             x1 = int(x1 * w)
             x2 = int(x2 * w)
@@ -75,22 +77,18 @@ while True:
         else:
             x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
 
-        # 중앙 좌표
         cx = int((x1 + x2) / 2)
         cy = int((y1 + y2) / 2)
-
-        # 클래스 이름 가져오기
         cls_name = class_names[cls] if cls < len(class_names) else str(cls)
 
-        # 바운딩 박스
+        # 바운딩 박스 그리기
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        label = "{} {:.2f}".format(cls_name, conf)
-        cv2.putText(frame, label, (x1, y1 - 5),
+        cv2.putText(frame, f"{cls_name} {conf:.2f}", (x1, y1 - 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
         cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
 
         print(f"탐지됨 → 클래스: {cls_name}, 좌표: ({cx}, {cy}), 신뢰도: {conf:.2f}")
-
+   
     # --- 결과 출력 ---
     cv2.imshow("TFLite Detection", frame)
 
