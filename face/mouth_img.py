@@ -11,7 +11,7 @@ save_dir = "face/result"
 os.makedirs(save_dir, exist_ok=True)
 
 # 분석할 이미지 경로
-IMAGE_PATH = "face/closed.png" 
+IMAGE_PATH = "/Users/yujuyoung/Desktop/ara/detections/capture_20251017_face.jpg" 
 
 # 이미지 불러오기
 image = cv2.imread(IMAGE_PATH)
