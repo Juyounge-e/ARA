@@ -23,7 +23,7 @@ if ret:
     cv2.imwrite(save_path, frame)
     print(f"사진 저장 완료: {save_path}")
     cv2.imshow("Captured Image", frame)
-    cv2.waitKey(3000) 
+    cv2.waitKey(7000) 
 else:
     print("프레임을 읽을 수 없습니다.")
 
