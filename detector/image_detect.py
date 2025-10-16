@@ -19,15 +19,15 @@ model.to(device)
 # ===============================
 # 2. 이미지 경로
 # ===============================
-IMAGE_PATH = "test/food.png"       # 분석할 사진
-SAVE_DIR = "detections"
+IMAGE_PATH = "test/realTest1.jpg"       # 분석할 사진
+SAVE_DIR = "food_result_img" "
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # ===============================
 # 3. 이미지 불러오기
 # ===============================
 if not os.path.exists(IMAGE_PATH):
-    print("❌ 이미지 경로가 잘못되었습니다:", IMAGE_PATH)
+    print("이미지 경로가 잘못되었습니다:", IMAGE_PATH)
     exit()
 
 img = cv2.imread(IMAGE_PATH)
